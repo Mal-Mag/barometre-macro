@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baromètre macro-financier</title>
+<meta name="description" content="Score synthétique de l'environnement économique et financier : croissance, inflation, marchés, risque.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3f0;
+  --surface-1: #fcfcfb;
+  --border: #e2e0da;
+  --grid: #ebe9e4;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --pos: #2a78d6; --neg: #e34948;
+  --band-stress: #e3494826; --band-prudence: #eb683420; --band-neutre: #9a99941c;
+  --band-favorable: #1baf7a22; --band-euphorie: #2a78d61f;
+  --accent: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e88;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --pos: #3987e5; --neg: #e66767;
+    --band-stress: #e6676729; --band-prudence: #d9592624; --band-neutre: #ffffff12;
+    --band-favorable: #199e7026; --band-euphorie: #3987e524; --accent: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e88;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --pos: #3987e5; --neg: #e66767;
+  --band-stress: #e6676729; --band-prudence: #d9592624; --band-neutre: #ffffff12;
+  --band-favorable: #199e7026; --band-euphorie: #3987e524; --accent: #3987e5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 15px/1.55 Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 24px; }
+h1 { font-size: 26px; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 17px; margin: 0 0 4px; }
+.sub { color: var(--text-secondary); margin: 4px 0 0; }
+.meta { color: var(--text-muted); font-size: 13px; text-align: right; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.grid { display: grid; gap: 16px; }
+.hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr); }
+@media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
+.score-big { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.score-big small { font-size: 20px; color: var(--text-muted); font-weight: 500; }
+.band-name { font-size: 20px; font-weight: 600; margin-top: 10px; }
+.band-action { color: var(--text-secondary); margin: 2px 0 12px; }
+.delta { font-size: 13px; color: var(--text-secondary); }
+.scale { position: relative; margin-top: 18px; }
+.scale-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; }
+.scale-bar span { display: block; height: 100%; }
+.scale-labels { display: flex; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.scale-labels { padding-bottom: 16px; }
+.scale-labels span { text-align: center; white-space: nowrap; }
+.scale-labels span:nth-child(even) { margin-top: 14px; }
+.marker { position: absolute; top: -5px; width: 4px; height: 20px; border-radius: 2px; background: var(--text-primary); box-shadow: 0 0 0 2px var(--surface-1); transform: translateX(-2px); }
+.pillars { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+@media (max-width: 820px) { .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pill { padding: 14px; }
+.pill .lab { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.pill .val { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.pill .w { font-size: 12px; color: var(--text-muted); }
+section { margin-top: 28px; }
+.sect-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px; margin-bottom: 12px; }
+.sect-head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.chart-box { position: relative; height: 320px; }
+.chart-box.small { height: 260px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.ranges { display: flex; gap: 4px; }
+.ranges button {
+  font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-secondary); cursor: pointer;
+}
+.ranges button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
+.contrib-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 2fr) 56px; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 14px; }
+.contrib-row:last-child { border-bottom: 0; }
+.contrib-row .pl { font-size: 12px; color: var(--text-muted); }
+.track { position: relative; height: 14px; }
+.track::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--text-muted); opacity: .5; }
+.bar { position: absolute; top: 2px; height: 10px; border-radius: 3px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.why { color: var(--text-muted); font-size: 12.5px; }
+.method { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 820px) { .method { grid-template-columns: 1fr; } }
+.method h3 { font-size: 15px; margin: 0 0 6px; }
+.method p, .method li { color: var(--text-secondary); font-size: 14px; margin: 0 0 6px; }
+.method ul { padding-left: 18px; margin: 0; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--grid); padding: 1px 5px; border-radius: 4px; }
+.robust-stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 12px; font-size: 14px; color: var(--text-secondary); }
+.robust-stats b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.why3m { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13.5px; color: var(--text-secondary); }
+.why3m b { color: var(--text-primary); }
+h3.sub-h { font-size: 15px; margin: 22px 0 4px; }
+td.ok { color: var(--text-primary); }
+td.ko { color: var(--text-muted); }
+tr.cur td { font-weight: 600; background: var(--grid); }
+.info { background: var(--grid); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; }
+.demo { background: #eda10024; border: 1px solid #eda10066; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; }
+.err { background: #e3494820; border: 1px solid #e3494866; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; }
+footer { margin-top: 40px; color: var(--text-muted); font-size: 13px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.srow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) 64px; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 14px; }
+.srow:last-of-type { border-bottom: 0; }
+.srow .sl-lab { display: flex; align-items: center; gap: 8px; }
+.srow input[type=range] { width: 100%; accent-color: var(--accent); }
+.srow output { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.fine { margin-top: 10px; }
+.fine summary { cursor: pointer; font-size: 14px; color: var(--accent); padding: 4px 0; }
+.console-status { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13.5px; color: var(--text-secondary); }
+.console-status b { color: var(--text-primary); }
+.ranges button:focus-visible, .srow input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 560px) { .srow { grid-template-columns: 1fr 56px; } .srow input[type=range] { grid-column: 1 / -1; order: 3; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Baromètre macro-financier</h1>
+      <p class="sub">Un score de 0 à 100 qui synthétise croissance, inflation, marchés et risque.</p>
+    </div>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div id="banners"></div>
+
+  <div class="grid hero">
+    <div class="card">
+      <div class="delta" id="asof"></div>
+      <div class="score-big" id="score"></div>
+      <div class="band-name" id="bandName"></div>
+      <p class="band-action" id="bandAction"></p>
+      <div class="delta" id="change"></div>
+      <div class="scale" aria-hidden="true">
+        <div class="scale-bar" id="scaleBar"></div>
+        <div class="marker" id="marker"></div>
+        <div class="scale-labels" id="scaleLabels"></div>
+      </div>
+      <p class="why3m" id="why3m"></p>
+    </div>
+    <div class="card">
+      <div class="sect-head">
+        <div><h2>Le score dans le temps</h2><p>Les bandes de couleur correspondent à la grille de lecture.</p></div>
+        <div class="ranges" role="group" aria-label="Période">
+          <button data-y="5">5 ans</button><button data-y="10">10 ans</button><button data-y="0" aria-pressed="true">Tout</button>
+        </div>
+      </div>
+      <div class="chart-box small"><canvas id="cGlobal" aria-label="Évolution du score global"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid pillars" id="pillars"></div>
+
+  <section class="card" id="console">
+    <div class="sect-head">
+      <div><h2>Console de pondérations</h2><p>Faites varier le poids de chaque pilier : le score, les graphiques et le test sur le passé se recalculent immédiatement.</p></div>
+      <div class="ranges"><button id="presetEq" type="button">Piliers à poids égaux</button><button id="presetRef" type="button">Réglage du rapport</button></div>
+    </div>
+    <div id="pwSliders"></div>
+    <div class="srow"><span class="sl-lab">Seuil d'alerte du score</span><input type="range" id="thSlider" min="30" max="60" step="5" aria-label="Seuil d'alerte"><output id="thOut"></output></div>
+    <details class="fine"><summary>Régler indicateur par indicateur</summary>
+      <p class="why">Poids relatif de chaque indicateur à l'intérieur de son pilier (la somme est ramenée à 100 % dans le pilier).</p>
+      <div id="iwSliders"></div>
+    </details>
+    <p class="console-status" id="consoleStatus" aria-live="polite"></p>
+  </section>
+
+
+  <section class="card">
+    <div class="sect-head">
+      <div><h2>Les quatre piliers</h2><p>Chaque pilier est la moyenne des notes de ses indicateurs (50 = moyenne historique).</p></div>
+    </div>
+    <div class="legend" id="pLegend"></div>
+    <div class="chart-box"><canvas id="cPillars" aria-label="Évolution des quatre piliers"></canvas></div>
+  </section>
+
+  <section class="card">
+    <div class="sect-head">
+      <div><h2>Ce qui tire le score aujourd'hui</h2><p>Contribution = poids × (note − 50), en points de score. À gauche, ce qui fait baisser ; à droite, ce qui fait monter.</p></div>
+    </div>
+    <div id="contrib"></div>
+  </section>
+
+  <section class="card">
+    <div class="sect-head">
+      <div><h2>Indicateurs et sources</h2><p>Toutes les séries proviennent de FRED (Federal Reserve Bank of St. Louis).</p></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Indicateur</th><th>Pilier</th><th>Source</th><th>Traitement</th><th class="r">Sens</th><th class="r">Poids</th><th class="r">Dernière valeur</th><th class="r">Note</th></tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="sect-head">
+      <div><h2>Test de robustesse</h2><p>Le signal change-t-il si l'on change de méthode ou de pondération ?</p></div>
+    </div>
+    <div class="legend" id="rLegend"></div>
+    <div class="chart-box small"><canvas id="cRobust" aria-label="Comparaison des méthodes"></canvas></div>
+    <div class="robust-stats" id="rStats"></div>
+  </section>
+
+  <section class="card" id="backtest">
+    <div class="sect-head">
+      <div><h2>Test sur le passé</h2><p>Le score aurait-il alerté avant les grandes crises ? Chaque mois est noté avec les seules données connues à l'époque.</p></div>
+    </div>
+    <div class="legend" id="bLegend"></div>
+    <div class="chart-box"><canvas id="cBack" aria-label="Score et épisodes de crise"></canvas></div>
+    <h3 class="sub-h">Crise par crise</h3>
+    <p class="sub">Alerte = signal déclenché dans les 12 mois précédant le début de la crise. ✓ indique le délai d'avance, ✗ une crise ratée, n.é. un historique insuffisant.</p>
+    <div class="table-wrap"><table><thead id="bEpHead"></thead><tbody id="bEp"></tbody></table></div>
+    <h3 class="sub-h">Le score fait-il mieux qu'une règle simple ?</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Signal d'alerte</th><th class="r">Crises détectées</th><th class="r">Mois en alerte</th><th class="r">Fausses alertes</th></tr></thead>
+      <tbody id="bRules"></tbody>
+    </table></div>
+    <h3 class="sub-h">Sensibilité au seuil d'alerte du score</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Seuil</th><th class="r">Crises détectées</th><th class="r">Mois en alerte</th><th class="r">Fausses alertes</th></tr></thead>
+      <tbody id="bSens"></tbody>
+    </table></div>
+    <p class="sub" id="bNote" style="margin-top:14px"></p>
+  </section>
+
+  <section>
+    <div class="grid method">
+      <div class="card">
+        <h3>1. Normalisation</h3>
+        <p>Chaque indicateur est converti en <b>Z-score glissant sur 10 ans</b> : Z = (X − μ) / σ, calculé uniquement avec le passé pour éviter tout biais d'anticipation.</p>
+        <p>Le Z-score est <b>borné entre −3 et +3</b> pour neutraliser les chocs extrêmes (2008, 2020), puis ramené sur 0-100 : note = (Z + 3) / 6 × 100.</p>
+      </div>
+      <div class="card">
+        <h3>2. Sens et cibles</h3>
+        <ul>
+          <li><b>Indicateurs de risque</b> (VIX, spread, chômage, pétrole) : Z-score inversé, pour que note haute = bonne santé.</li>
+          <li><b>Inflation</b> : on note l'<b>écart absolu à la cible de 2 %</b>, puis on l'inverse. Trop haut comme trop bas est pénalisé.</li>
+          <li>Séries alignées en <b>mensuel</b> ; le PIB trimestriel est reporté sur 3 mois au plus.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>3. Pondération</h3>
+        <p><b>Croissance 30 %, Inflation 20 %, Marchés 30 %, Risque 20 %</b>. Croissance et marchés portent le cycle et la valorisation des actifs ; inflation et risque jouent un rôle de frein.</p>
+        <p>Au sein d'un pilier, les indicateurs ont le même poids. Si une donnée manque, les poids restants sont renormalisés.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Limites</h2>
+    <p class="sub">Corrélation ne veut pas dire causalité : le score décrit l'environnement, il ne prédit pas le rendement du mois suivant. Les données macro sont publiées avec retard et révisées : le test sur le passé décale le signal d'un mois et date le PIB à sa publication, mais utilise les séries révisées, pas les chiffres « temps réel » de l'époque. Avec seulement 3 ou 4 crises, ce test est indicatif et non statistique. Les Z-scores supposent implicitement une distribution normale, alors que les séries financières ont des queues épaisses. Enfin, les poids restent un choix d'expert, d'où le test de robustesse.</p>
+  </section>
+
+  <footer>Données : FRED, Federal Reserve Bank of St. Louis. Projet de gestion d'actifs, Kedge Business School.</footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  const D = window.BAROMETRE;
+  if (!D) { document.getElementById('banners').innerHTML = '<div class="err">Données introuvables : lance <code>python barometre.py</code> pour générer <code>data.js</code>.</div>'; return; }
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = (v, d = 1) => v == null ? '–' : v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtW = v => fmt(v, Math.abs(v - Math.round(v)) < 0.05 ? 0 : 1);
+  const bandKey = n => ({ 'Stress': 'stress', 'Prudence': 'prudence', 'Neutre': 'neutre', 'Favorable': 'favorable', 'Euphorie': 'euphorie' })[n];
+  const pKeys = Object.keys(D.pillars);
+  const pColors = ['--s1', '--s2', '--s3', '--s4'];
+  const kOf = {}; pKeys.forEach(k => kOf[D.pillars[k].label] = k);
+  const inds = D.indicators.filter(i => i.scores && i.scores.length);
+  const N = D.dates.length;
+
+  // ---- réglage de référence (celui du rapport) et état modifiable
+  const REF = { score: D.current.score, pw: pKeys.map(k => D.pillars[k].weight * 100), th: D.backtest ? D.backtest.threshold : 45 };
+  const RAW = Object.fromEntries(D.current.contributions.map(c => [c.id, c.raw]));
+  const BT0 = D.backtest ? JSON.parse(JSON.stringify(D.backtest)) : null;
+  const state = { pw: REF.pw.slice(), iw: Object.fromEntries(inds.map(i => [i.id, 50])), th: REF.th };
+  const isDefault = () => state.th === REF.th && state.pw.every((v, j) => v === REF.pw[j]) && inds.every(i => state.iw[i.id] === 50);
+
+  // ---- poids normalisés
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  function pwNorm() { const s = sum(state.pw); return s > 0 ? state.pw.map(x => x / s) : state.pw.map(() => 1 / state.pw.length); }
+  const groupOf = k => inds.filter(i => kOf[i.pillar] === k);
+  function iwNorm(k) { const g = groupOf(k), s = sum(g.map(i => state.iw[i.id])), o = {}; g.forEach(i => o[i.id] = s > 0 ? state.iw[i.id] / s : 1 / g.length); return o; }
+  function effW() { const pn = pwNorm(), o = {}; pKeys.forEach((k, j) => { const w = iwNorm(k); Object.keys(w).forEach(id => o[id] = pn[j] * w[id]); }); return o; }
+
+  // ---- test sur le passé recalculé dans le navigateur (même logique que barometre.py)
+  const HOR = BT0 ? BT0.horizon : 12, LAG = BT0 ? BT0.lag : 1, MINM = BT0 && BT0.min_months ? BT0.min_months : 6;
+  const mi = s => +s.slice(0, 4) * 12 + (+s.slice(5, 7));
+  const MI = D.dates.map(mi);
+  const crisis = D.dates.map(m => !!(BT0 && BT0.episodes.some(c => m >= c.start && m <= c.end)));
+  const fwd = D.dates.map((_, i) => { for (let j = i; j <= Math.min(N - 1, i + HOR); j++) if (crisis[j]) return true; return false; });
+  const resolved = D.dates.map((_, i) => i < N - HOR);
+
+  function btScore(G) {
+    function sig(th) {
+      const avail = G.map((_, i) => i - LAG >= 0 && G[i - LAG] != null);
+      const alert = G.map((_, i) => avail[i] && G[i - LAG] < th);
+      return { avail, alert };
+    }
+    function episode(s, c) {
+      const st = mi(c.start); let cnt = 0, first = -1;
+      MI.forEach((m, i) => { if (m > st - HOR && m <= st && s.avail[i]) { cnt++; if (first < 0 && s.alert[i]) first = i; } });
+      const ev = cnt >= MINM;
+      return { evaluable: ev, hit: ev && first >= 0, lead: ev && first >= 0 ? st - MI[first] : null };
+    }
+    function summary(s) {
+      let ok = 0, na = 0, fa = 0;
+      s.alert.forEach((a, i) => { if (s.avail[i] && resolved[i]) { ok++; if (a) { na++; if (!fwd[i]) fa++; } } });
+      return { n_alert: na, alert_share: ok ? na / ok : null, false_rate: na ? fa / na : null };
+    }
+    function row(th) { const s = sig(th), ev = BT0.episodes.map(c => episode(s, c)).filter(e => e.evaluable); return { threshold: th, hits: ev.filter(e => e.hit).length, n: ev.length, ...summary(s) }; }
+    const s0 = sig(state.th);
+    const episodes = BT0.episodes.map(c => ({ ...c, signals: { ...c.signals, score: episode(s0, c) } }));
+    const r = row(state.th);
+    const rules = BT0.rules.map(x => x.id === 'score' ? { ...x, label: 'Score du baromètre (< ' + state.th + ')', hits: r.hits, n: r.n, n_alert: r.n_alert, alert_share: r.alert_share, false_rate: r.false_rate } : x);
+    const ths = Array.from(new Set(BT0.sensitivity.map(x => x.threshold).concat([state.th]))).sort((a, b) => a - b);
+    return { ...BT0, threshold: state.th, episodes, rules, sensitivity: ths.map(row) };
+  }
+
+  // ---- calcul complet à partir des poids
+  function compute() {
+    const P = {};
+    pKeys.forEach(k => {
+      const g = groupOf(k), w = iwNorm(k);
+      P[k] = D.dates.map((_, t) => { let num = 0, den = 0; g.forEach(i => { const v = i.scores[t]; if (v != null) { num += w[i.id] * v; den += w[i.id]; } }); return den > 0 && den >= 0.5 ? num / den : null; });
+    });
+    const pn = pwNorm(), need = pKeys.filter(k => P[k].some(v => v != null));
+    const G = D.dates.map((_, t) => {
+      if (!need.every(k => P[k][t] != null)) return null;
+      let s = 0, d = 0; pKeys.forEach((k, j) => { if (P[k][t] != null) { s += pn[j] * P[k][t]; d += pn[j]; } });
+      return d > 0 ? s / d : null;
+    });
+    const valid = []; G.forEach((v, t) => { if (v != null) valid.push(t); });
+    const last = valid[valid.length - 1], prev = valid[Math.max(0, valid.length - 4)];
+    const ew = effW(), score = G[last];
+    const band = D.bands.find(b => score >= b.lo && score < b.hi) || { name: 'n.d.', action: '' };
+    const contributions = inds.map(i => { const sc = i.scores[last]; return { id: i.id, label: i.label, pillar: i.pillar, score: sc, raw: RAW[i.id], contribution: sc == null ? null : ew[i.id] * (sc - 50), w: ew[i.id] }; })
+      .sort((a, b) => (a.contribution == null ? 0 : a.contribution) - (b.contribution == null ? 0 : b.contribution));
+    const rows = inds.filter(i => i.scores[last] != null && i.scores[prev] != null).map(i => ({ label: i.label, delta: ew[i.id] * (i.scores[last] - i.scores[prev]) })).sort((a, b) => a.delta - b.delta);
+    const drivers = { up: rows.slice().reverse().slice(0, 2).filter(r => r.delta >= 0.05), down: rows.slice(0, 2).filter(r => r.delta <= -0.05) };
+    return { P, G, last, prev, score, change: score - G[prev], band, contributions, drivers, ew, pn, B: BT0 ? btScore(G) : null,
+      pillarsNow: Object.fromEntries(pKeys.map(k => [k, P[k][last]])) };
+  }
+
+  // ---- en-tête (statique)
+  document.getElementById('meta').innerHTML = 'Données jusqu\'à ' + D.meta.last_month + '<br>Mise à jour le ' + D.meta.updated;
+  let bn = '';
+  if (D.meta.demo) bn += '<div class="demo"><b>Mode démo</b> : données simulées. Lance <code>python barometre.py</code> pour les vraies données.</div>';
+  if (D.meta.errors.length) bn += '<div class="err">Séries indisponibles lors de la dernière mise à jour : ' + D.meta.errors.join(' ; ') + '</div>';
+  (D.meta.notes || []).forEach(n => { bn += '<div class="info">' + n + '</div>'; });
+  document.getElementById('banners').innerHTML = bn;
+  document.getElementById('asof').textContent = 'Score au ' + D.meta.last_month;
+  document.getElementById('scaleBar').innerHTML = D.bands.map(x => '<span style="flex:' + (x.hi - x.lo) + ';background:var(--band-' + bandKey(x.name) + ')"></span>').join('');
+  document.getElementById('scaleLabels').innerHTML = D.bands.map(x => '<span style="flex:' + (x.hi - x.lo) + '">' + x.name + '</span>').join('');
+
+  // ---- graphiques
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 12;
+  const bandsPlugin = {
+    id: 'bands',
+    beforeDatasetsDraw(chart, args, opts) {
+      if (!opts.on) return;
+      const { ctx, chartArea: a, scales: { y } } = chart;
+      ctx.save();
+      D.bands.forEach(x => {
+        const top = y.getPixelForValue(Math.min(x.hi, y.max)), bot = y.getPixelForValue(Math.max(x.lo, y.min));
+        if (bot <= a.top || top >= a.bottom) return;
+        ctx.fillStyle = css('--band-' + bandKey(x.name));
+        ctx.fillRect(a.left, Math.max(top, a.top), a.right - a.left, Math.min(bot, a.bottom) - Math.max(top, a.top));
+      });
+      ctx.restore();
+    }
+  };
+  const crosshair = {
+    id: 'crosshair',
+    afterDatasetsDraw(chart) {
+      const act = chart.tooltip && chart.tooltip.getActiveElements();
+      if (!act || !act.length) return;
+      const { ctx, chartArea: a } = chart, x = act[0].element.x;
+      ctx.save(); ctx.strokeStyle = css('--text-muted'); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, a.top); ctx.lineTo(x, a.bottom); ctx.stroke(); ctx.restore();
+    }
+  };
+  function baseOpts(bands) {
+    return {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      elements: { point: { radius: 0, hoverRadius: 4, hitRadius: 8 }, line: { borderWidth: 2, tension: 0.15 } },
+      scales: {
+        x: { ticks: { color: css('--text-muted'), maxTicksLimit: 8, maxRotation: 0, callback(v) { return this.getLabelForValue(v).slice(0, 4); } }, grid: { display: false }, border: { color: css('--border') } },
+        y: { min: 0, max: 100, ticks: { color: css('--text-muted'), stepSize: 25 }, grid: { color: css('--grid') }, border: { display: false } }
+      },
+      plugins: {
+        legend: { display: false }, bands: { on: bands },
+        tooltip: {
+          backgroundColor: css('--surface-1'), titleColor: css('--text-primary'), bodyColor: css('--text-secondary'),
+          borderColor: css('--border'), borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true,
+          callbacks: { label: c => ' ' + c.dataset.label + ' : ' + fmt(c.parsed.y) }
+        }
+      }
+    };
+  }
+  function legend(el, items) {
+    document.getElementById(el).innerHTML = items.map(x => '<span><i style="background:var(' + x.c + ')' + (x.dash ? ';background:repeating-linear-gradient(90deg,var(' + x.c + ') 0 4px,transparent 4px 7px)' : '') + '"></i>' + x.l + '</span>').join('');
+  }
+
+  const gChart = new Chart(document.getElementById('cGlobal'), {
+    type: 'line',
+    data: { labels: D.dates, datasets: [{ label: 'Score global', data: D.global, borderColor: css('--text-primary'), backgroundColor: css('--text-primary') }] },
+    options: baseOpts(true), plugins: [bandsPlugin, crosshair]
+  });
+  const pChart = new Chart(document.getElementById('cPillars'), {
+    type: 'line',
+    data: { labels: D.dates, datasets: pKeys.map((k, i) => ({ label: D.pillars[k].label, data: D.pillars[k].values, borderColor: css(pColors[i]), backgroundColor: css(pColors[i]) })) },
+    options: baseOpts(false), plugins: [crosshair]
+  });
+  const rChart = new Chart(document.getElementById('cRobust'), {
+    type: 'line',
+    data: {
+      labels: D.dates, datasets: [
+        { label: 'Méthode retenue', data: D.global, borderColor: css('--text-primary'), backgroundColor: css('--text-primary') },
+        { label: 'Min-Max', data: D.robustness.minmax, borderColor: css('--s1'), backgroundColor: css('--s1'), borderDash: [5, 4] },
+        { label: 'Poids égaux', data: D.robustness.egal, borderColor: css('--s2'), backgroundColor: css('--s2'), borderDash: [5, 4] }
+      ]
+    },
+    options: baseOpts(false), plugins: [crosshair]
+  });
+  document.getElementById('rStats').innerHTML =
+    '<span>Corrélation avec la variante Min-Max : <b>' + fmt(D.robustness.corr_minmax, 2) + '</b></span>' +
+    '<span>Corrélation avec les piliers à poids égaux : <b>' + fmt(D.robustness.corr_egal, 2) + '</b></span>';
+
+  let bChart = null;
+  if (BT0) {
+    const crisisPlugin = {
+      id: 'crises',
+      beforeDatasetsDraw(chart) {
+        const { ctx, chartArea: a, scales: { x } } = chart, L = chart.data.labels;
+        ctx.save(); ctx.fillStyle = css('--band-stress');
+        BT0.episodes.forEach(e => {
+          const i0 = L.indexOf(e.start), i1 = L.lastIndexOf(e.end);
+          if (i0 < 0 || i1 < 0) return;
+          const x0 = x.getPixelForValue(i0), x1 = x.getPixelForValue(i1);
+          ctx.fillRect(x0, a.top, Math.max(x1 - x0, 3), a.bottom - a.top);
+        });
+        ctx.restore();
+      }
+    };
+    bChart = new Chart(document.getElementById('cBack'), {
+      type: 'line',
+      data: { labels: D.dates, datasets: [
+        { label: 'Score global', data: D.global, borderColor: css('--text-primary'), backgroundColor: css('--text-primary') },
+        { label: 'Seuil d\'alerte', data: D.dates.map(() => BT0.threshold), borderColor: css('--neg'), backgroundColor: css('--neg'), borderDash: [6, 4], borderWidth: 1.5 }
+      ] },
+      options: baseOpts(false), plugins: [crisisPlugin, crosshair]
+    });
+  } else { document.getElementById('backtest').style.display = 'none'; }
+
+  let rangeStart = 0;
+  document.querySelectorAll('.ranges button[data-y]').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.ranges button[data-y]').forEach(x => x.setAttribute('aria-pressed', x === btn));
+    const y = +btn.dataset.y; rangeStart = y ? Math.max(0, N - y * 12) : 0;
+    gChart.data.labels = D.dates.slice(rangeStart);
+    gChart.data.datasets[0].data = cur.G.slice(rangeStart);
+    gChart.update();
+  }));
+
+  // ---- rendu (appelé à chaque changement de pondération)
+  let cur = null;
+  const tr = { level: 'Niveau', yoy: 'Glissement annuel', yoy_gap: 'Écart à la cible 2 %', ma200_gap: 'Écart à la MM 200 j' };
+  const pctS = v => v == null ? '–' : fmt(v * 100, 0) + ' %';
+  const wTxt = () => cur.pn.map(x => Math.round(x * 100)).join(' / ');
+
+  function render() {
+    const c = cur, ch = c.change;
+    document.getElementById('score').innerHTML = fmt(c.score) + ' <small>/ 100</small>';
+    document.getElementById('bandName').textContent = c.band.name;
+    document.getElementById('bandAction').textContent = c.band.action;
+    document.getElementById('change').textContent = (ch >= 0 ? '▲ +' : '▼ ') + fmt(Math.abs(ch)) + ' pt sur 3 mois';
+    document.getElementById('marker').style.left = Math.max(0, Math.min(100, c.score)) + '%';
+
+    const list = a => a.map(r => r.label + ' (' + (r.delta > 0 ? '+' : '−') + fmt(Math.abs(r.delta), 2) + ')').join(', ');
+    let t = '<b>Pourquoi le score a ' + (ch >= 0 ? 'progressé' : 'reculé') + ' en 3 mois (' + (ch >= 0 ? '+' : '−') + fmt(Math.abs(ch)) + ' pt) ?</b> ';
+    if (c.drivers.up.length) t += 'Soutiens : ' + list(c.drivers.up) + '. ';
+    if (c.drivers.down.length) t += 'Freins : ' + list(c.drivers.down) + '. ';
+    if (!c.drivers.up.length && !c.drivers.down.length) t += 'Aucun indicateur ne s\'est déplacé de façon notable.';
+    document.getElementById('why3m').innerHTML = t + '<span class="why" style="display:block">Variation en points de score = poids × variation de la note de l\'indicateur.</span>';
+
+    document.getElementById('pillars').innerHTML = pKeys.map((k, i) =>
+      '<div class="card pill"><div class="lab"><span class="dot" style="background:var(' + pColors[i] + ')"></span>' + D.pillars[k].label + '</div>' +
+      '<div class="val">' + fmt(c.pillarsNow[k]) + '</div><div class="w">Poids ' + fmtW(c.pn[i] * 100) + ' %</div></div>').join('');
+
+    legend('pLegend', pKeys.map((k, i) => ({ c: pColors[i], l: D.pillars[k].label + ' (' + fmtW(c.pn[i] * 100) + ' %)' })));
+    const mainLabel = isDefault() ? 'Méthode retenue (Z-score, ' + wTxt() + ')' : 'Votre pondération (' + wTxt() + ')';
+    legend('rLegend', [{ c: '--text-primary', l: mainLabel }, { c: '--s1', l: 'Variante Min-Max', dash: true }, { c: '--s2', l: 'Piliers à poids égaux (25 % chacun)', dash: true }]);
+
+    const cs = c.contributions.filter(x => x.contribution != null);
+    const maxAbs = Math.max(...cs.map(x => Math.abs(x.contribution)), 0.5);
+    document.getElementById('contrib').innerHTML = cs.map(x => {
+      const w = Math.abs(x.contribution) / maxAbs * 50, neg = x.contribution < 0;
+      return '<div class="contrib-row" title="Note ' + fmt(x.score) + ' / 100"><div>' + x.label + '<div class="pl">' + x.pillar + ' · note ' + fmt(x.score) + '</div></div>' +
+        '<div class="track"><div class="bar" style="' + (neg ? 'right:50%' : 'left:50%') + ';width:' + w + '%;background:var(' + (neg ? '--neg' : '--pos') + ')"></div></div>' +
+        '<div class="num">' + (neg ? '' : '+') + fmt(x.contribution, 2) + '</div></div>';
+    }).join('');
+
+    document.getElementById('tbl').innerHTML = D.indicators.map(i => {
+      const last = i.scores.length ? i.scores[i.scores.length - 1] : null;
+      const w = i.scores.length ? c.ew[i.id] * 100 : i.weight * 100;
+      return '<tr><td>' + i.label + '<div class="why">' + i.why + '</div></td><td>' + i.pillar + '</td>' +
+        '<td><a href="' + i.url + '" target="_blank" rel="noopener">' + i.source + '</a></td><td>' + tr[i.transform] + (i.sign < 0 ? ', inversé' : '') + '</td>' +
+        '<td class="r">' + (i.sign > 0 ? '+' : '−') + '</td><td class="r">' + fmtW(w) + ' %</td>' +
+        '<td class="r">' + fmt(RAW[i.id], 2) + ' ' + i.unit + '</td><td class="r"><b>' + fmt(last) + '</b></td></tr>';
+    }).join('');
+
+    // graphiques
+    gChart.data.labels = D.dates.slice(rangeStart); gChart.data.datasets[0].data = c.G.slice(rangeStart); gChart.update();
+    pKeys.forEach((k, j) => { pChart.data.datasets[j].data = c.P[k]; }); pChart.update();
+    rChart.data.datasets[0].data = c.G; rChart.data.datasets[0].label = isDefault() ? 'Méthode retenue' : 'Votre pondération'; rChart.update();
+
+    if (BT0) renderBacktest(c.B);
+    renderStatus();
+  }
+
+  function renderBacktest(B) {
+    bChart.data.datasets[0].data = cur.G;
+    bChart.data.datasets[1].data = D.dates.map(() => B.threshold);
+    bChart.update();
+    document.getElementById('bLegend').innerHTML =
+      '<span><i style="background:var(--text-primary)"></i>Score global</span>' +
+      '<span><i style="background:repeating-linear-gradient(90deg,var(--neg) 0 4px,transparent 4px 7px)"></i>Seuil d\'alerte (' + B.threshold + ')</span>' +
+      '<span><i style="background:var(--band-stress);height:10px"></i>Épisodes de crise (définis à l\'avance)</span>';
+    const short = { score: 'Score', pente: 'Courbe inversée', vix: 'VIX > 25', tendance: 'Sous MM 200 j' };
+    const ids = B.rules.map(r => r.id);
+    document.getElementById('bEpHead').innerHTML = '<tr><th>Épisode</th><th>Période</th>' + ids.map(i => '<th>' + short[i] + '</th>').join('') + '</tr>';
+    const cell = s => {
+      if (!s.evaluable) return '<td class="ko">n.é.</td>';
+      if (!s.hit) return '<td class="ko">✗ raté</td>';
+      return '<td class="ok">✓ ' + (s.lead === 0 ? 'le mois du début' : s.lead + ' mois avant') + '</td>';
+    };
+    document.getElementById('bEp').innerHTML = B.episodes.map(e =>
+      '<tr><td>' + e.label + '<div class="why">' + e.type + '</div></td><td>' + e.start.slice(5) + '/' + e.start.slice(0, 4) + ' → ' + e.end.slice(5) + '/' + e.end.slice(0, 4) + '</td>' +
+      ids.map(i => cell(e.signals[i])).join('') + '</tr>').join('');
+    document.getElementById('bRules').innerHTML = B.rules.map(r =>
+      '<tr' + (r.id === 'score' ? ' class="cur"' : '') + '><td>' + r.label + '</td><td class="r">' + r.hits + ' / ' + r.n + '</td><td class="r">' + pctS(r.alert_share) + '</td><td class="r">' + pctS(r.false_rate) + '</td></tr>').join('');
+    document.getElementById('bSens').innerHTML = B.sensitivity.map(r =>
+      '<tr' + (r.threshold === B.threshold ? ' class="cur"' : '') + '><td>Score &lt; ' + r.threshold + '</td><td class="r">' + r.hits + ' / ' + r.n + '</td><td class="r">' + pctS(r.alert_share) + '</td><td class="r">' + pctS(r.false_rate) + '</td></tr>').join('');
+    document.getElementById('bNote').innerHTML =
+      '<b>Comment lire ce test.</b> Une « fausse alerte » est un mois en alerte sans crise en cours ni crise dans les ' + B.horizon + ' mois suivants. ' +
+      (isDefault() ? 'Le seuil de ' + B.threshold + ' correspond au bas de la bande « Neutre » : il a été fixé à l\'avance, pas optimisé sur le passé. '
+        : '<b>Vous avez modifié la pondération ou le seuil : ces résultats sont ceux de votre réglage, pas ceux du rapport.</b> Chercher les poids qui « détectent » le plus de crises revient à optimiser sur le passé (surapprentissage) : le résultat ne dit rien de la capacité future du score. ') +
+      'Le signal est décalé de ' + B.lag + ' mois (le score d\'un mois n\'est connu que le mois suivant) et les ' + B.horizon + ' derniers mois sont écartés car leur avenir est inconnu. ' +
+      'Avec si peu de crises, un seuil plus élevé détecte davantage mais multiplie les fausses alertes : il faut lire le compromis, pas un score de réussite.' +
+      (D.meta.demo ? ' <b>En mode démo, ces résultats sont sans valeur : ils portent sur des données simulées.</b>' : '');
+  }
+
+  function renderStatus() {
+    const el = document.getElementById('consoleStatus');
+    if (isDefault()) { el.innerHTML = 'Réglage du rapport : piliers ' + REF.pw.map(x => Math.round(x)).join(' / ') + ', seuil d\'alerte ' + REF.th + '. Déplacez un curseur pour tester une autre pondération.'; return; }
+    const r0 = BT0 ? BT0.rules.find(x => x.id === 'score') : null, r1 = BT0 ? cur.B.rules.find(x => x.id === 'score') : null;
+    el.innerHTML = '<b>Réglage personnalisé</b> (piliers ' + wTxt() + ', seuil ' + state.th + ') : score <b>' + fmt(cur.score) + '</b> contre ' + fmt(REF.score) + ' avec le réglage du rapport.' +
+      (r0 ? ' Test sur le passé : ' + r1.hits + '/' + r1.n + ' crises détectées (rapport : ' + r0.hits + '/' + r0.n + ').' : '');
+  }
+
+  // ---- console : curseurs
+  const pwBox = document.getElementById('pwSliders'), iwBox = document.getElementById('iwSliders');
+  pwBox.innerHTML = pKeys.map((k, j) => '<div class="srow"><span class="sl-lab"><span class="dot" style="background:var(' + pColors[j] + ')"></span>' + D.pillars[k].label +
+    '</span><input type="range" min="0" max="100" step="1" data-k="pw" data-j="' + j + '" aria-label="Poids ' + D.pillars[k].label + '"><output id="pwo' + j + '"></output></div>').join('');
+  iwBox.innerHTML = pKeys.map(k => groupOf(k).map(i => '<div class="srow"><span class="sl-lab">' + i.label + '<span class="why">&nbsp;· ' + D.pillars[k].label + '</span></span>' +
+    '<input type="range" min="0" max="100" step="5" data-k="iw" data-id="' + i.id + '" aria-label="Poids ' + i.label + '"><output id="iwo_' + i.id + '"></output></div>').join('')).join('');
+  const thS = document.getElementById('thSlider');
+  if (!BT0) thS.closest('.srow').style.display = 'none';
+
+  function syncSliders() {
+    const pn = pwNorm();
+    pKeys.forEach((k, j) => { const s = pwBox.querySelector('[data-j="' + j + '"]'); s.value = state.pw[j]; document.getElementById('pwo' + j).textContent = fmtW(pn[j] * 100) + ' %'; });
+    pKeys.forEach(k => { const w = iwNorm(k); groupOf(k).forEach(i => { iwBox.querySelector('[data-id="' + i.id + '"]').value = state.iw[i.id]; document.getElementById('iwo_' + i.id).textContent = fmtW(w[i.id] * 100) + ' %'; }); });
+    thS.value = state.th; document.getElementById('thOut').textContent = '< ' + state.th;
+  }
+  function saveHash() {
+    try { history.replaceState(null, '', isDefault() ? location.pathname + location.search : '#p=' + state.pw.join(',') + '&t=' + state.th + '&i=' + inds.map(i => state.iw[i.id]).join(',')); } catch (e) { }
+  }
+  function loadHash() {
+    try {
+      const q = new URLSearchParams(location.hash.slice(1)); if (!q.has('p')) return;
+      const p = q.get('p').split(',').map(Number), i = (q.get('i') || '').split(',').map(Number), t = +q.get('t');
+      const okN = v => Number.isFinite(v) && v >= 0 && v <= 100;
+      if (p.length === pKeys.length && p.every(okN)) state.pw = p;
+      if (i.length === inds.length && i.every(okN)) inds.forEach((x, n) => state.iw[x.id] = i[n]);
+      if (Number.isFinite(t) && t >= 30 && t <= 60) state.th = t;
+    } catch (e) { }
+  }
+  function update() { cur = compute(); syncSliders(); render(); saveHash(); }
+
+  document.getElementById('console').addEventListener('input', e => {
+    const t = e.target; if (t.tagName !== 'INPUT') return;
+    const v = +t.value;
+    if (t.dataset.k === 'pw') state.pw[+t.dataset.j] = v;
+    else if (t.dataset.k === 'iw') state.iw[t.dataset.id] = v;
+    else if (t.id === 'thSlider') state.th = v;
+    update();
+  });
+  document.getElementById('presetRef').addEventListener('click', () => { state.pw = REF.pw.slice(); inds.forEach(i => state.iw[i.id] = 50); state.th = REF.th; update(); });
+  document.getElementById('presetEq').addEventListener('click', () => { state.pw = pKeys.map(() => 25); update(); });
+
+  loadHash();
+  update();
+
+  // recolorer les graphiques si le thème change
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
+  window.__baro = { compute, state, REF };
+})();
+</script>
+</body>
+</html>
