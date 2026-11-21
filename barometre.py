@@ -123,31 +123,40 @@ def _parse_fred_csv(text: str) -> pd.Series:
     return s[s.index >= START]
 
 
+CACHE_USED = []   # séries pour lesquelles le téléchargement a échoué et où la dernière copie enregistrée a servi
+
+
 def fetch_fred(series_id: str) -> pd.Series:
     """Télécharge une série FRED au format CSV (aucune clé API nécessaire).
 
-    Ordre : fichier manuel dans csv_manuels/ s'il existe, sinon téléchargement
-    (3 essais, en-têtes de navigateur, délai plus long que la version initiale).
+    Ordre : téléchargement (2 essais, en-têtes de navigateur) ; en cas d'échec, dernière copie
+    enregistrée dans csv_manuels/ (mise à jour à chaque téléchargement réussi, ou déposée à la main).
     """
     import os
     import time
-    manual = os.path.join(MANUAL_DIR, f"{series_id}.csv")
-    if os.path.exists(manual):
-        with open(manual, encoding="utf-8") as f:
-            print(f"      (fichier manuel utilisé pour {series_id})")
-            return _parse_fred_csv(f.read())
-
+    os.makedirs(MANUAL_DIR, exist_ok=True)
+    path = os.path.join(MANUAL_DIR, f"{series_id}.csv")
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
     last_err = None
-    for attempt in range(1, 4):
+    for attempt in range(1, 3):
         try:
-            r = requests.get(url, timeout=(15, 90), headers={"User-Agent": BROWSER_UA, "Accept": "text/csv,*/*"})
+            r = requests.get(url, timeout=(10, 40), headers={"User-Agent": BROWSER_UA, "Accept": "text/csv,*/*"})
             r.raise_for_status()
-            return _parse_fred_csv(r.text)
+            s = _parse_fred_csv(r.text)
+            if len(s) < 10:
+                raise ValueError("série vide")
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                f.write(r.text)
+            return s
         except Exception as e:
             last_err = e
-            print(f"      essai {attempt}/3 échoué pour {series_id} ({type(e).__name__})")
-            time.sleep(3 * attempt)
+            print(f"      essai {attempt}/2 échoué pour {series_id} ({type(e).__name__})", flush=True)
+            time.sleep(2 * attempt)
+    if os.path.exists(path):
+        print(f"      copie enregistrée utilisée pour {series_id}", flush=True)
+        CACHE_USED.append(series_id)
+        with open(path, encoding="utf-8") as f:
+            return _parse_fred_csv(f.read())
     raise last_err
 
 
@@ -362,6 +371,9 @@ def build(demo: bool) -> dict:
             errors.append(f"{ind['fred']} : {e}")
             print(f"  ERREUR {ind['fred']} : {e}")
 
+    if CACHE_USED:
+        notes.append("Téléchargement FRED impossible lors de cette mise à jour pour : " + ", ".join(sorted(set(CACHE_USED))) +
+                     ". La dernière copie enregistrée de ces séries a été utilisée.")
     Z = pd.DataFrame(z)
     idx = Z.index[Z.index >= SCORE_START]
     Z = Z.loc[idx]
